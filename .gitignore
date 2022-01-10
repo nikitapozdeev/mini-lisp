@@ -1,5 +1,8 @@
 # MacOS
 .DS_Store
 
+# project
+build
+
 # C obj files
 *.o
