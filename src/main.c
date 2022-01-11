@@ -25,9 +25,26 @@ void add_history(char* unused) {}
 #include <editline/history.h>
 #endif
 
+#include "mpc.h"
+
 static char* version = "0.0.1";
 
 int main(int argc, char** argv) {
+  mpc_parser_t* Number = mpc_new("number");
+  mpc_parser_t* Operator = mpc_new("operator");
+  mpc_parser_t* Expression = mpc_new("expression");
+  mpc_parser_t* Minilisp = mpc_new("minilisp");
+
+  mpca_lang(MPCA_LANG_DEFAULT,
+    "                                                            \
+      number     : /-?[0-9]+/ ;                                  \
+      operator   : '+' | '-' | '*' | '/' ;                       \
+      expression : <number> | '(' <operator> <expression>+ ')' ; \
+      minilisp   : /^/ <operator> <expression>+ /$/ ;            \
+    ",
+    Number, Operator, Expression, Minilisp
+    );
+
   printf("Mini-lisp version %s\n", version);
   puts("Press Ctrl+C to Exit\n");
 
@@ -36,9 +53,18 @@ int main(int argc, char** argv) {
     
     add_history(input);
 
-    printf("You're type a %s\n", input);
+    mpc_result_t r;
+    if (mpc_parse("<stdin>", input, Minilisp, &r)) {
+      mpc_ast_print(r.output);
+      mpc_ast_delete(r.output);
+    } else {
+      mpc_err_print(r.error);
+      mpc_err_delete(r.error);
+    }
 
     free(input);
   }
+
+  mpc_cleanup(4, Number, Operator, Expression, Minilisp);
   return 0;
 }
